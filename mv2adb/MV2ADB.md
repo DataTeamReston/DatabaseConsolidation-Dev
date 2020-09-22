@@ -44,7 +44,7 @@ As a LOB user
     ```
     <copy>
     sudo su - root
-    scp -i <private key path> <full path of downloaded zip file> opc@<publicIP>:/home/opc/
+    scp -i private_key_path full_path_of_downloaded_zip_fie opc@<publicIP>:/home/opc/
     mv /home/opc/clientrpms.zip /root/
     unzip clientrpms.zip
     rpm -ivh clientrpms/oracle-instantclient18.5-basic-18.5.0.0.0-3.x86_64.rpm clientrpms/oracle-instantclient18.5-sqlplus-18.5.0.0.0-3.x86_64.rpm clientrpms/oracle-instantclient18.5-tools-18.5.0.0.0-3.x86_64.rpm
