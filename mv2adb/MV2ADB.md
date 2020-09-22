@@ -34,7 +34,7 @@ As a LOB user
 
     ```
     <copy>
-    ssh -i <private-key> opc@PublicIP
+    ssh -i private-key opc@PublicIP
     </copy>
     ```
     
