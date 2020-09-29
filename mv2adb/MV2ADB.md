@@ -49,6 +49,7 @@ How to create a tag (put this above your  ## Header)
 Move to Autonomous Database (MV2ADB) is a tool, which migrates data from an "on premises" database to Autonomous Database Cloud utitlizing Oracle Data Pump. Data Pump lets you Import your data into Autonomous Database using Data Pump Dump Files which are residing on Oracle Cloud Infrastructure Object Storage.
 The MV2ADB tool is able to automatically take a data pump export, push it to OCI Object Storage, then it automatically imports it into the Autonomous Database using Data Pump in one command.
 *Note: For using mv2adb for migration from source DB to ATPD, the source DB should be at lower version than Autonomous Database.*
+![](./screenshots/MV2ADB_screenshots/consolidation.jpg)
 
 <a name="obj"></a>
 ### Objectives
@@ -63,7 +64,6 @@ As a admin/root user
   * This lab was not tested for other versions, should still work though.
   * Your source database should be a lower version than the Autonomous going to.
 * You have an Autonomous database (your target) provisioned, as well as a source database.
-  * Refer to [Lab 7](?lab=lab-7-provisioning-databases).
 * Your source database should have internet connectivity.
 * For our lab, our source server is Red Hat Linux version 4.8.5-16.0.3
 * You have access to an OCI tenancy.
@@ -305,7 +305,7 @@ cat $ORACLE_HOME/network/admin/tnsnames.ora
 ##### Now, test and see if it can connect to your SOURCE DATABASE.
 * Connect your hostname and your service name, refer to my example below if you need help.
 ```
-sqlplus SYS/WElcome_123#@//10.9.1.33/trg19XDB.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
+sqlplus SYS/WElcome_123#@//10.9.1.33/trg.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
 ```
 ![](./screenshots/MV2ADB_screenshots/sql_host_service.png)
 
@@ -334,7 +334,7 @@ If you don't have your ZIP, just sftp to your network/admin folder.
 ### Filling out your Object Store Properties
 Some of these are self explanatory
 ```
-OCI_REGION=us-
+OCI_REGION=
 OCI_NAMESPACE=
 OCI_BUCKET=
 OCI_ID=
@@ -371,7 +371,7 @@ cd /opt/mv2adb
 
 
 * Once it is done, you will see this.
-* You may get an error about DBA role grants, but that is okay.
+* You may get an error about DBA role grants. This error is okay, please refer to [here](https://docs.oracle.com/en/cloud/paas/exadata-express-cloud/mgeec/import-schema-oracle-autonomous-database-1.html).
 ![](./screenshots/MV2ADB_screenshots/mv2done.png)
 
 <a name="validate"></a>
