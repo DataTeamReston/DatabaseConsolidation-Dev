@@ -119,6 +119,10 @@ As a admin/root user
 ## Installing Instant Client on the Source
 #### You do the same installation steps for all versions of Oracle database
 * Connect to your source, and switch to the ***root*** user.
+```
+ssh -i <private-key> opc@PublicIP
+sudo su - root
+```
 * Now, go to the home directory of the root user.
 * Go [here](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html) and find your SOURCE database version.
 * I am using 18, but it applies for all.
@@ -209,7 +213,7 @@ cat tnsnames.ora
 ```
 export ORACLE_HOME=/root/instantclient_19_8
 export LD_LIBRARY_PATH="$ORACLE_HOME"
-export PATH="$ORACLE_HOME:$PATH
+export PATH="$ORACLE_HOME:$PATH"
 ```
 ![](./screenshots/MV2ADB_screenshots/param_export.png)
 
