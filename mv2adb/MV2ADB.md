@@ -1,216 +1,432 @@
-# Migrate Workloads to ATP-D using MV2ADB
+# Consolidate your databases using MV2ADB
+
+## Table of contents
+
+
+<!--
+How to add to TOC
+* [DisplayName](#createdtag)
+  * [DisplaynameUnder](#createdtag)
+
+How to create a tag (put this above your  ## Header)
+<a name="createdtag"></a>
+-->
+
+* [Introduction](#intro)
+  * [Objectives](#obj)
+  * [Assumptions](#assumptions)
+    * [Downloading Autonomous Database wallet](#downloadwallet)
+    * [Generate Auth Token](#authtoken)
+* [Creating a bucket](#makebucket)
+* [Installing Instant Client on the Source](#instantclient)
+  * [Adding your wallet to the instant client](#instantwallet)
+* [Testing connectivity from source to target](#connectivitytest)
+* [Download and Install MV2ADB on Source DBCS instance](#mv2adb)
+* [Encrypting passwords, and your authentication token](#encrypt)
+* [Setting up the configuration file](#config)
+  * [How to find your DB_CONSTRING](#dbcon)
+  * [Filling out your ADB Properties](#adbprop)
+  * [Filling out your Object Store Properties](#adbprop)
+  * [Screenshot of an example configuration file](#screenconfig)
+* [Running the Migration Script](#migscript)
+* [Validate the Data Migration](#validate)
+* [Troubleshooting common issues](#troubleshooting)
+  * [Dumpfile errors](#dump)
+  * [Account locked error](#accountlocked)
+  * [Cannot open logfile](#cannotopenlogfile)
+  * [Wrong password when connecting](#wrongpassword)
+  * [Getting a crazy amount of errors](#alotoferrors)
+* [Closing statement](#closing)
+
+
+<!--
+<a name="closing"></a>
+## Closing statement
+-->
+
+<a name="intro"></a>
 ## Introduction
-Data Replication is an essential part of your efforts and tasks when you are migrating your Oracle databases on OCI. Move to Autonomous Database (MV2ADB) is a tool, permitting the data loading and migration from “on premises” to Autonomous Database Cloud leveraging Oracle Data Pump and with one command. Data Pump Import lets you import data from Data Pump files residing on the Oracle Cloud Infrastructure Object Storage. You can save your data to your Cloud Object Store and load them to Autonomous Database Cloud using “mv2adb”. 
+Move to Autonomous Database (MV2ADB) is a tool, which migrates data from an "on premises" database to Autonomous Database Cloud utitlizing Oracle Data Pump. Data Pump lets you Import your data into Autonomous Database using Data Pump Dump Files which are residing on Oracle Cloud Infrastructure Object Storage.
+The MV2ADB tool is able to automatically take a data pump export, push it to OCI Object Storage, then it automatically imports it into the Autonomous Database using Data Pump in one command.
+*Note: For using mv2adb for migration from source DB to ATPD, the source DB should be at lower version than Autonomous Database.*
 
-This lab is a 3 step process – take export from source, upload the dumpfiles on object storage and import files into ATP-D. However, we would be performing all the 3 steps using a single command. In this lab we will use a 12c DBCS instance as source and an ATP-D instance as our target.
-
-*Note: For using mv2adb for migration from source DB to ATPD, the source DB should be at lower version than ATP-D Database.*
-
+<a name="obj"></a>
 ### Objectives
-
-As a LOB user
+As a admin/root user
 1. Establish connectivity from Source instance to Target instance.
 2. Install and Configure MV2ADB tool on Source.
 3. Run the MV2ADB config script to migrate workloads from Source to Target.
 
-### Required Artifacts
+<a name="assumptions"></a>
+### Assumptions for this lab, ***please copy our assumptions***
+* You are either using **11.2** or **19C** as your ***SOURCE DATABASE***
+  * This lab was not tested for other versions, should still work though.
+  * Your source database should be a lower version than the Autonomous going to.
+* You have an Autonomous database (your target) provisioned, as well as a source database.
+  * Refer to [Lab 7](?lab=lab-7-provisioning-databases).
+* Your source database should have internet connectivity.
+* For our lab, our source server is Red Hat Linux version 4.8.5-16.0.3
+* You have access to an OCI tenancy.
+  * You should have the ability to create buckets.
+  * You should be able to create an authentication token (we will go into steps below.)
+  * You should have the ability to create an Autonomous database.
 
-- A pre-provisioned dedicated autonomous database instance. Refer to [Lab 7](?lab=lab-7-provisioning-databases).
-- A pre-provisioned Source with connectivity to target ATP-D. We are using DBCS as Source here. 
-- Download and transfer ATP-D Wallet to Source Machine. Refer to [Lab 8](?lab=lab-8-configuring-development-system) Step 2.
-- A pre-generated Auth Token from the console. (Menu==>Identity==>Users==>User Details==>Auth Tokens==>Generate Tokens)
 
-## STEP 1: Create a Bucket
+**Downloading/Generating**
+  <a name="downloadwallet"></a>
+* **Download the Autonomous Database wallet**
+  * Go to your Autonomous Database and click on “DB Connection”.
+![](./screenshots/MV2ADB_screenshots/download_wallet_1.png)
+  * Click on Download wallet.
+![](./screenshots/MV2ADB_screenshots/download_wallet_2.png)
 
-- Login to the OCI tenancy. Goto Menu => Core Infrastructure => Oject Storage => Object Storage
-   ![](./Images/Img13.png " ") 
-   
-- Ensure you are in the right compartment and Click on Create Bucket.
-   ![](./Images/Img14.png " ") 
+ * Create a password for the wallet.
+![](./screenshots/MV2ADB_screenshots/download_wallet_3.png)
 
-## STEP 2: Install Instant Client on the Source DBCS instance
+  * Click on Download.
+![](./screenshots/MV2ADB_screenshots/download_wallet_4.png)
 
-- ssh into the Source DBCS instance
+<a name="authtoken"></a>
+* **Generate a auth token (Note this down!)**
 
-    ```
-    <copy>
-    ssh -i private-key opc@PublicIP
-    </copy>
-    ```
-    
-- Download the Instant Client RPM [here](https://www.oracle.com/database/technologies/instant-client/downloads.html). We used [Version 18.5.0.0.0 Basic Package ZIP](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html)
-*Note: It is preferred to do this installation from root user.*
+  * Click on your profile, then your username
+![](./screenshots/MV2ADB_screenshots/authtoken_1.png)
 
-    ```
-    <copy>
-    sudo su - root
-    scp -i private_key_path full_path_of_downloaded_zip_fie opc@<publicIP>:/home/opc/
-    mv /home/opc/clientrpms.zip /root/
-    unzip clientrpms.zip
-    rpm -ivh clientrpms/oracle-instantclient18.5-basic-18.5.0.0.0-3.x86_64.rpm clientrpms/oracle-instantclient18.5-sqlplus-18.5.0.0.0-3.x86_64.rpm clientrpms/oracle-instantclient18.5-tools-18.5.0.0.0-3.x86_64.rpm
-    </copy>
-    ``` 
-   ![](./Images/Img2.png " ")
+  * Click on Auth Token, and click Generate (**Note it down as you will not be able to see it again!**)
+![](./screenshots/MV2ADB_screenshots/authtoken_2.png)
 
-The instant cient package containing Basic Package, SQLPlus Package and Tools Package is now installed.
 
-## STEP 2: Check connectivity to the Target ATP-D instance from Source
+<a name="makebucket"></a>
+## Creating a Bucket
 
-- Download and transfer ATP-D DB Wallet to Source Machine (DBCS instance).  
-*Note: We have downloaded the DB Wallet onto our local machine and uploaded it to object storage. We then used scp to transfer it to DBCS. Refer to [Lab 5](?lab=lab-5-configuring-development-system) Step 2.*
+* Login to your tenancy.
+* Click on the menu in top left.
+* Select Object Storage.
 
-    ```
-    <copy>
-    mkdir -p /root/wallet
-    scp -i <private key path> <full path of downloaded DB Wallet file> opc@<publicIP>:/home/opc/
-    mv /home/opc/Wallet.zip /root/wallet/
-    </copy>
-    ```
-   ![](./Images/Img3.png " ")
-    
-- Edit the sqlnet file to change the wallet directory to the new location of /root/wallet and export the following paths:
+![](./screenshots/MV2ADB_screenshots/object_storage.png)
 
-    ```
-    <copy>
-    export TNS_ADMIN=/root/wallet
-    export LD_LIBRARY_PATH=/usr/lib/oracle/18.5/client64/lib:$LD_LIBRARY_PATH
-    export PATH=/usr/lib/oracle/18.5/client64/bin:$PATH
-    </copy>
-    ```
- *Note: These paths may vary on your system. Pls check prior to performing export.*
+* Make sure you are in the right compartment.
+* Click "Create Bucket".
 
-   ![](./Images/Img4.jpg " ")
+![](./screenshots/MV2ADB_screenshots/create_bucket.png)
 
-- Copy the connect string from tnsnames.ora file existing in the Wallet folder to connect to ATP-D instance.
+* Set your name, then hit Create Bucket again.
+* Take note of your region, bucket name, and tenancy name for later.
 
-    ```
-    <copy>
-    sqlplus ADMIN/<password of ATPD>@<connect string>
-    SQL> exit
-    </copy>
-    ```
+![](./screenshots/MV2ADB_screenshots/final_create_button.png)
 
-## STEP 3: Download and Install MV2ADB on Source DBCS instance.
+<a name="instantclient"></a>
+## Installing Instant Client on the Source
+#### You do the same installation steps for all versions of Oracle database
+* Connect to your source, and switch to the ***root*** user.
+* Now, go to the home directory of the root user.
+* Go [here](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html) and find your SOURCE database version.
+* I am using 18, but it applies for all.
+* We need to get the **basic package, tools, and development packages.**
+* We need to grab the links to the download of the ***ZIP FILES.***
+* To do this, just right click on the link under the download column, and click on copy link address.
+![](./screenshots/MV2ADB_screenshots/copy_link_wget.png)
 
-- Download the MV2ADB rpm file [here](https://support.oracle.com/epmos/faces/DocContentDisplay?_afrLoop=291097898074822&id=2463574.1&_afrWindowMode=0&_adf.ctrl-state=v0102jx12_4). Platform specific rpm can be downloaded under the History Tab. 
 
-- Transfer this file to your Source DBCS using scp.
+* Grab the links for all three ***ZIP FILES*** and put in a notepad.
+* Now, fill out the following (links are for 19C, replace with yours if needed).
+* Run these commands on the home directory of the root user.
+```
+wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantclient-basic-linux.x64-19.8.0.0.0dbru.zip
+wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantclient-sqlplus-linux.x64-19.8.0.0.0dbru.zip
+wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantclient-tools-linux.x64-19.8.0.0.0dbru.zip
+```
 
-    ```
-    <copy>
-    scp -i <private key path> <full path of downloaded RPM file> opc@<publicIP>:/home/opc/
-    mv /home/opc/<RPM file> /root/<RPM file>
-    </copy>
-    ```
-    
-- Install the rpm using the given command from the directory where the rpm exists.
 
-    ```
-    <copy>
-    sudo su -
-    rpm -i <name of the rpm file downloaded>
-    </copy>
-    ```
-   ![](./Images/Img5.jpg " ")
+* Now, we are going to unzip the files.
+```
+unzip -o instantclient-basic-linux.x64-19.8.0.0.0dbru.zip
+unzip -o instantclient-sqlplus-linux.x64-19.8.0.0.0dbru.zip
+unzip -o instantclient-tools-linux.x64-19.8.0.0.0dbru.zip
+```
+* Once we do that, we should have a folder named instantclient_yourversion.
+* CD into that folder, and verify you have sqlplus, expdp, and impdp.
+```
+cd instantclient_19_8
+ls -lrta
+```
+![](./screenshots/MV2ADB_screenshots/sql_imp_exp_unzip.png)
 
-- Validate the installation. 
 
-    ```
-    <copy>
-    sudo yum install tree (Optional Step - Do only if your Source is a Compute Instance)
-    tree /opt/mv2adb/
-    </copy>
-    ```
-   ![](./Images/Img6.jpg " ")
+<a name="instantwallet"></a>
+### Adding your wallet to the instant client
 
-*Note: The cfg file created here will be used as a reference for our configuration file.*
+* We're going to use the wallet ZIP file you should have grabbed from the start.
+* On Windows, you will need to use a tool to sftp the files to your source instance.
+  * Popular ones are WinSCP, and Mobaxterm.
+  * I will be using Mobaxterm's built in sftp.
+* CD into your instantclient_19_8/network/admin folder on your source instance.
+* Run the following on your source instance.
+  * Note, we switch to the ***opc*** user because we will not have permission for the root folder.
+```
+sudo su - opc
+cd /tmp/
+Mkdir -m 777 wallets_19lab
+Cd wallets_19lab
+```
 
-## STEP 4: Encrypt Passwords
 
-Generate encrypted passwords using the “mv2adb encpass” command for system password, Admin password and auth token (OCI Password) and copy the values to a safe location (Eg: Notepad).
+* Now, open up your sftp tab on your Mobaxterm
+  * It's the same process for WinSCP, you just login as opc and upload through that gui.
+  * You can also upload the wallet zip file somewhere, and just use the wget command.
+![](./screenshots/MV2ADB_screenshots/moba_tmp_opc.png)
 
-    ```
-    <copy>
-    cd /opt/mv2adb
-    ./mv2adb encpass
-    </copy>
-    ```
-   ![](./Images/Img7.jpg " ")
+* Now, unzip all the files
+```
+unzip Wallet_T19.zip
+chmod 777 *
+ls -lrta
+```
+![](./screenshots/MV2ADB_screenshots/wallet_unzip.png)
 
-## STEP 5: Run the Migration Script
+* Now, switch back to root by typing exit and then move the contents However.
+```
+exit
+mv /tmp/wallets_19lab/* /root/instantclient_19_8/network/admin
+```
+![](./screenshots/MV2ADB_screenshots/moving_wallet_root.png)
+* ***NOTE -: LEAVE THE ZIP FILE IN THIS FOLDER AS WELL!***
 
-- Take a backup of the existing configuration file and edit the DBNAME.mv2adb.cfg file.
+<a name="connectivitytest"></a>
+## Testing connectivity from source to target
+* First, we need to grab our connect string from the tnsnames.ora that we just unzipped.
+* We will then just grab the name and note it down, refer to the screenshot.
+```
+cd /root/instantclient_19_8/network/admin
+cat tnsnames.ora
+```
+![](./screenshots/MV2ADB_screenshots/tnsnames_cat.png)
 
-    ```
-    <copy>
-    cd /opt/mv2adb/conf/
-    cp DBNAME.mv2adb.cfg DBNAME.mv2adb.cfg_bkp
-    vi DBNAME.mv2adb.cfg
-    </copy>
-    ```
-#### Note: Edit the following parameters
 
-    ```
-    DB_CONSTRING =//<hostname>:1521/<servicename of DB>
-    SYSTEM_DB_PASSWORD=<enc_password>
-    SCHEMAS=<schemas to be migrated>
-    REMAP=<Source tablespace>:<Target tablespace>
-    DUMP_NAME=<name for your dump file>
-    DUMP_PATH=<path to store your dump file>
-    DUMP_FILES=<full path of dump file>
-    OHOME=<Oracle Home Path>
-    ICHOME=<Instant Client Path>
-    ADB_NAME=<Name of Target>
-    ADB_Password=<Encrypted Value>
-    ADB_TARGET=ATPD
-    ADB_CFILE=<location of ATPD Wallet file>
-    ```
-*Note: Click [here](https://objectstorage.us-ashburn-1.oraclecloud.com/p/ccTZey-FamcBZ02nCaU7J9yzy20c0a5UxCQf-3IciWE/n/atpdpreview11/b/mv2adb/o/samplesource.mv2adbfinal.cfg) to download a sample config file for reference.*
-    
-   ![](./Images/Img8.jpg " ")
+* Next, we need to export some parameters as aliases.
+* Just run these on the Linux command line.
+* ***Make sure your ORACLE_HOME matches your instantclient folder.***
+```
+export ORACLE_HOME=/root/instantclient_19_8
+export LD_LIBRARY_PATH="$ORACLE_HOME"
+export PATH="$ORACLE_HOME:$PATH
+```
+![](./screenshots/MV2ADB_screenshots/param_export.png)
 
-Navigate to your console and get the OCI Details. 
 
-   ![](./Images/Img15.jpg " ")
-   
-   ![](./Images/Img9.jpg " ")
+* Now, we can test sqlplus connectivity.
+* Refer to your tnsnames.ora if needed.
+```
+cd /root/instantclient_19_8
+./sqlplus ADMIN/WElcome_123#@t19_high
+```
+![](./screenshots/MV2ADB_screenshots/sqlplus_connectivity.png)
 
-- Run the migration script in auto mode.
 
-    ```
-    <copy>
-    cd /opt/mv2adb
-    ./mv2adb auto -conf /opt/mv2adb/conf/DBNAME.mv2adb.cfg
-    </copy>
-    ```
-    
-   ![](./Images/Img10.jpg " ")
-   ![](./Images/Img11.jpg " ")
+<a name="mv2adb"></a>
+## Download and Install MV2ADB on Source DBCS instance
+##### Steps are the same for all Database versions, but make sure to grab the right RPM version from the link below
+* Download the MV2ADB rpm file [here](https://support.oracle.com/epmos/faces/DocContentDisplay?_afrLoop=291097898074822&id=2463574.1&_afrWindowMode=0&_adf.ctrl-state=v0102jx12_4). Platform specific rpm can be downloaded under the History Tab.
+![](./screenshots/MV2ADB_screenshots/MOS_history.png)
+* Transfer this file to your Source DBCS using Mobaxterm or similar.
+  * Refer above for steps
 
-*Note: Migration of schema from source machine to Autonomous Database is complete*
 
-## STEP 6: Validate the Data Migration
+* Install the rpm using the given command from the directory where the rpm exists.
+```
+rpm -i mv2adb-2.0.1-114.el6.x86_64.rpm
+```
+![](./screenshots/MV2ADB_screenshots/rpm_install_mv2adb.png)
 
-We had migrated a sample HR schema in this lab. Let's connect to the ATPD (Target) and validate the migration of data.
 
-    ```
-    <copy>
-    echo "WALLET_LOCATION = (SOURCE = (METHOD = file) (METHOD_DATA = (DIRECTORY="/root/wallet")))" > /root/wallet/sqlnet.ora
-    export TNS_ADMIN=/root/wallet
-    export LD_LIBRARY_PATH=/usr/lib/oracle/18.5/client64/lib:$LD_LIBRARY_PATH
-    export PATH=/usr/lib/oracle/18.5/client64/bin:$PATH
-    sqlplus ADMIN/Password@<ATPD Connect String>
-    SQL> select * from hr.sourcetable;
-    </copy>
-    ```
-   
-   ![](./Images/Img12.jpg " ")
+<a name="encrypt"></a>
+## Encrypting passwords, and your authentication token
+Once you install the RPM, a folder will be created called **/opt/mv2adb**. We are going to use this tool to encrypt our **DATABASE** password, and our authentication token you got from the start of the lab.
+* Take note of your authentication token, and your password and then run the commands below. It will output a long string, **this is your encrypted password so save it for later!**
+* You cannot see the password you enter, this is normal!
+```
+cd d /opt/mv2adb
+./mv2adb.bin encpass
+```
+![](./screenshots/MV2ADB_screenshots/enc_pass.png)
+* **SAVE THE STRING!!!**
+* Note -: ***If you get an error saying it cannot find the command or similar***, you may have to run the mv2adb.bin without any parameters to first initialize it!
+```
+./mv2adb.bin
+```
+![](./screenshots/MV2ADB_screenshots/mv2adb_noparam.png)
 
-## Acknowledgements
+<a name="config"></a>
+## Setting up the configuration file
+***NOTE -: ALL PASSWORDS (AND THE AUTH TOKEN FOR THE BUCKET) USE THE ENCRYPTED FORMAT STRING***
+* First, take a backup of the original configuration file.
+```
+cd conf/
+cp DBNAME.mv2adb.cfg BKP_DBNAME.mv2adb.cfg
+```
+![](./screenshots/MV2ADB_screenshots/backup_config.png)
 
-*Great Work! You have successfully migrated HR schema from source database to ATP-D. You can do the same and more by making appropriate changes to the cfg file for various parameters.*
 
-- **Author** - Padma Priya Rajan, Navya M S & Jayshree Chatterjee
-- **Last Updated By/Date** - Jayshree Chatterjee, July 2020
+* Now, edit the configuration file.
+* You only need to edit these, **comment out the rest!**
+```
+DB_CONSTRING =//<hostname>/<servicename of DB>
+SYSTEM_DB_PASSWORD=<enc_password>
+SCHEMAS=<schemas to be migrated>
+REMAP=<Source tablespace>:<Target tablespace>
+DUMP_NAME=<name for your dump file>
+DUMP_PATH=<path to store your dump file>
+DUMP_FILES=<full path of dump file>
+OHOME=<Oracle Home Path>
+ICHOME=<Instant Client Path>
+```
 
-See an issue?  Please open up a request [here](https://github.com/oracle/learning-library/issues).   Please include the workshop name and lab in your request. 
+<a name="dbcon"></a>
+### How to find your DB_CONSTRING
+##### Hostname
+* Go to your **SOURCE INSTANCE** and login as the **ORACLE USER!**
+* Then, set your environment to your **SOURCE DATABASE.**
+* Then, check your listener, refer to command below.
+```
+. oraenv
+lsnrctl status
+```
+![](./screenshots/MV2ADB_screenshots/listener.png)
+* Your **HOSTNAME** will be under the "Listening Endpoints Summary", refer to screenshot
+* In our case, it is 10.9.1.33!
+
+##### Service name
+* You simply grab it from the **SOURCE DATABASE** tnsnames.ora.
+```
+cat $ORACLE_HOME/network/admin/tnsnames.ora
+```
+![](./screenshots/MV2ADB_screenshots/source_service.png)
+
+##### Now, test and see if it can connect to your SOURCE DATABASE.
+* Connect your hostname and your service name, refer to my example below if you need help.
+```
+sqlplus SYS/WElcome_123#@//10.9.1.33/trg19XDB.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
+```
+![](./screenshots/MV2ADB_screenshots/sql_host_service.png)
+
+<a name="adbprop"></a>
+### Filling out your ADB Properties
+These are the following parameters we will talk about in this section.
+```
+ADB_NAME=
+ADB_PASSWORD=
+ADB_CFILE=
+```
+##### ADB_NAME
+This is just going to be the connect string name from your Autonomous tnsnames.ora (from your credentials ZIP file). ***You do not need to add _high, it will add it automatically so DO NOT ADD IT!***
+
+##### ADB_PASSWORD
+This is your Autonomous database password in the **ENCRYPTED** format from earlier steps.
+
+##### ADB_CFILE
+This is the location of your wallet ZIP file location, in my case it was -:
+```
+/root/instantclient_19_8/network/admin/Wallet_T19.zip
+```
+If you don't have your ZIP, just sftp to your network/admin folder.
+
+<a name="adbprop"></a>
+### Filling out your Object Store Properties
+Some of these are self explanatory
+```
+OCI_REGION=us-
+OCI_NAMESPACE=
+OCI_BUCKET=
+OCI_ID=
+OCI_PASSWORD=                       
+```
+##### OCI_NAMESPACE
+This is your tenancy name
+
+##### OCI_ID
+This is your login username. Make sure to include your oracleidentitycloudservice if using SSO / Federation.
+```
+e.g.
+oracleidentitycloudservice/noah.horner@oracle.com
+```
+
+##### OCI_PASSWORD
+This is your **ENCRYPTED** authentication token from earlier on in the lab.
+
+<a name="screenconfig"></a>
+### Screenshot of an example configuration file
+![](./screenshots/MV2ADB_screenshots/config_example.png)
+
+<a name="migscript"></a>
+## Running the Migration Script
+Now we are going to run the script that exports from your source, then imports into your Autonomous database using data pump. You can always refer to the official steps from my Oracle support (MOS) [here](https://support.oracle.com/epmos/faces/DocContentDisplay?_afrLoop=291097898074822&id=2463574.1&_afrWindowMode=0&_adf.ctrl-state=v0102jx12_4).
+
+* We will run it in AUTO mode, follow the command. ***MAKE SURE YOU ARE THE ROOT USER***
+```
+cd /opt/mv2adb
+./mv2adb.bin auto -conf /opt/mv2adb/conf/DBNAME.mv2adb.cfg
+```
+![](./screenshots/MV2ADB_screenshots/mv2adb_run.png)
+![](./screenshots/MV2ADB_screenshots/autorun_1.png)
+
+
+* Once it is done, you will see this.
+* You may get an error about DBA role grants, but that is okay.
+![](./screenshots/MV2ADB_screenshots/mv2done.png)
+
+<a name="validate"></a>
+## Validate the Data Migration
+We used HR schema, but make sure you check the correct schema you used from your configuration file. If you followed lab 7, HR should be there.
+
+```
+cd /root/instantclient_19_8/
+./sqlplus ADMIN/WElcome_123#@t19_high
+select TABLE_NAME from all_tables where owner='HR';
+```
+![](./screenshots/MV2ADB_screenshots/schmea_verify.png)
+
+
+<a name="troubleshooting"></a>
+## Troubleshooting Common Issues
+<a name="dump"></a>
+**Dump File errors**
+* After each run, make sure to clear out the dump file directory.
+```rm /home/oracle/dpump/* ```
+![](./screenshots/MV2ADB_screenshots/cleardpumpdir.png)
+
+
+<a name="accountlocked"></a>
+**Account Locked error**
+* Switch to Oracle user, set environment (.oraenv), and unlock.
+* The following commands will show you all users that are locked, and how to unlock a user.
+```
+sqlplus / as sysdba
+SELECT username, account_status, created, lock_date, expiry_date FROM dba_users WHERE account_status != 'OPEN';
+ALTER USER username ACCOUNT UNLOCK
+```
+
+<a name="cannotopenlogfile"></a>
+**Cannot Open Logfile**
+* We need to change directory group from root to oninstall and change permissions.
+```
+chown oracle:oinstall /home/oracle/dpump
+chmod -R 660 /home/oracle/dpump
+```
+![](./screenshots/MV2ADB_screenshots/cannotopenlogfile.png)
+
+
+<a name="wrongpassword"></a>
+**Wrong password when connecting**
+*  Double check you encrypted the right database password and auth token from OCI. You can regenerate them and use the new ones to make sure.
+
+<a name="alotoferrors"></a>
+**Getting a crazy amount of errors**
+* You probably had FULL = Y **NOT commented out in your config file!***   
+![](./screenshots/MV2ADB_screenshots/full=y.png)
+
+
+<a name="closing"></a>
+## Closing statement
+
+- **Author** - Noah Horner & Humza Meraj
+- **Last Updated By/Date** - Noah Horner & Humza Meraj September 28th, 2020.
