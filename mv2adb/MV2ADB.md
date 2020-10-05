@@ -124,7 +124,7 @@ unzip -o instantclient-sqlplus-linux.x64-19.8.0.0.0dbru.zip
 unzip -o instantclient-tools-linux.x64-19.8.0.0.0dbru.zip
 ```
 * After the files are unzipped, navigate inside the directory named instantclient_yourversion
-* Verify you have sqlplus, expdp, and impdp.
+* Verify you have sqlplus, expdp, and impdp in the directory
 ```
 cd instantclient_19_8
 ls -lrta
