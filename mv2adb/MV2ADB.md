@@ -12,32 +12,6 @@ How to create a tag (put this above your  ## Header)
 <a name="createdtag"></a>
 -->
 
-* [Introduction](#intro)
-  * [Objectives](#obj)
-  * [Assumptions](#assumptions)
-    * [Downloading Autonomous Database wallet](#downloadwallet)
-    * [Generate Auth Token](#authtoken)
-* [Creating a bucket](#makebucket)
-* [Installing Instant Client on the Source](#instantclient)
-  * [Adding your wallet to the instant client](#instantwallet)
-* [Testing connectivity from source to target](#connectivitytest)
-* [Download and Install MV2ADB on Source DBCS instance](#mv2adb)
-* [Encrypting passwords, and your authentication token](#encrypt)
-* [Setting up the configuration file](#config)
-  * [How to find your DB_CONSTRING](#dbcon)
-  * [Filling out your ADB Properties](#adbprop)
-  * [Filling out your Object Store Properties](#adbprop)
-  * [Screenshot of an example configuration file](#screenconfig)
-* [Running the Migration Script](#migscript)
-* [Validate the Data Migration](#validate)
-* [Troubleshooting common issues](#troubleshooting)
-  * [Dumpfile errors](#dump)
-  * [Account locked error](#accountlocked)
-  * [Cannot open logfile](#cannotopenlogfile)
-  * [Wrong password when connecting](#wrongpassword)
-  * [Getting a crazy amount of errors](#alotoferrors)
-* [Closing statement](#closing)
-
 
 <!--
 <a name="closing"></a>
@@ -60,16 +34,19 @@ As a admin/root user
 
 <a name="assumptions"></a>
 ### Assumptions for this lab, ***please copy our assumptions***
-* You are either using **11.2** or **19C** as your ***SOURCE DATABASE***
-  * This lab was not tested for other versions, should still work though.
-  * Your source database should be a lower version than the Autonomous going to.
-* You have an Autonomous database (your target) provisioned, as well as a source database.
-* Your source database should have internet connectivity.
-* For our lab, our source server is Red Hat Linux version 4.8.5-16.0.3
-* You have access to an OCI tenancy.
-  * You should have the ability to create buckets.
-  * You should be able to create an authentication token (we will go into steps below.)
-  * You should have the ability to create an Autonomous database.
+* The ***SOURCE DATABASES*** used are **11.2** and **19C**
+  * The schemas used are as follow:
+    * 11g - MARKET
+    * 19c - HR
+  * This lab was not tested for other versions other than 11.2 and 19c
+  * The source database must be a lower version than the Autonomous database
+* An Autonomous database (target) provisioned
+* Source databases provisioned
+* The source databases must have internet connectivity
+* The source servers are running Oracle Linux
+* Access to an OCI tenancy
+  * Ability to create buckets
+  * Ability to create an authentication token (steps below)
 
 
 **Downloading/Generating**
@@ -116,25 +93,23 @@ As a admin/root user
 ![](./screenshots/MV2ADB_screenshots/final_create_button.png)
 
 <a name="instantclient"></a>
-## Installing Instant Client on the Source
-#### You do the same installation steps for all versions of Oracle database
-* Connect to your source, and switch to the ***root*** user.
+## Installing Instant Client on the Source Servers
+#### The same installation steps for all versions of Oracle database
+* Connect to the source databases, and switch to the ***root*** user.
 ```
 ssh -i <private-key> opc@PublicIP
 sudo su - root
 ```
-* Now, go to the home directory of the root user.
-* Go [here](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html) and find your SOURCE database version.
-* I am using 18, but it applies for all.
-* We need to get the **basic package, tools, and development packages.**
-* We need to grab the links to the download of the ***ZIP FILES.***
-* To do this, just right click on the link under the download column, and click on copy link address.
+* Navigate to the home directory of the root user.
+* Click [here](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html) and find your SOURCE database version.
+* Download the **basic package, tools, and development packages** ***ZIP FILES.***
+* Right click on the link under the download column, then click on **copy link address**
 ![](./screenshots/MV2ADB_screenshots/copy_link_wget.png)
 
 
-* Grab the links for all three ***ZIP FILES*** and put in a notepad.
-* Now, fill out the following (links are for 19C, replace with yours if needed).
-* Run these commands on the home directory of the root user.
+* Copy the links for all three ***ZIP FILES*** and put in a notepad
+* Fill out the following (links are for 19C, replace with yours if needed)
+* Run the following commands on the home directory of the root user
 ```
 wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantclient-basic-linux.x64-19.8.0.0.0dbru.zip
 wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantclient-sqlplus-linux.x64-19.8.0.0.0dbru.zip
@@ -142,14 +117,14 @@ wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantc
 ```
 
 
-* Now, we are going to unzip the files.
+* Unzip the files.
 ```
 unzip -o instantclient-basic-linux.x64-19.8.0.0.0dbru.zip
 unzip -o instantclient-sqlplus-linux.x64-19.8.0.0.0dbru.zip
 unzip -o instantclient-tools-linux.x64-19.8.0.0.0dbru.zip
 ```
-* Once we do that, we should have a folder named instantclient_yourversion.
-* CD into that folder, and verify you have sqlplus, expdp, and impdp.
+* After the files are unzipped, navigate inside the directory named instantclient_yourversion
+* Verify you have sqlplus, expdp, and impdp.
 ```
 cd instantclient_19_8
 ls -lrta
