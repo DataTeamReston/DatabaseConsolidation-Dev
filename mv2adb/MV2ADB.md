@@ -20,23 +20,6 @@ As a root user
 - ATP-D Wallet downloaded on your local machine.
 - A pre-generated Auth Token from the console.
 
-<!--
-### Assumptions for this lab, ***please copy our assumptions***
-* The ***SOURCE DATABASES*** used are **11.2** and **19C**
-  * The schemas used are as follow:
-    * 11g - MARKET
-    * 19c - HR
-  * This lab was not tested for other versions other than 11.2 and 19c
-  * The source database must be a lower version than the Autonomous database
-* An Autonomous database (target) provisioned
-* Source databases provisioned
-* The source databases must have internet connectivity
-* The source servers are running Oracle Linux
-* Access to an OCI tenancy
-  * Ability to create buckets
-  * Ability to create an authentication token (steps below)
-!-->
-
 
 ## STEP 1: Downloading ATP-D wallet to your local machine
 
@@ -92,14 +75,15 @@ As a root user
 ## STEP 3: Installing Instance Client on the Source database instances
 
 - Navigate [here](https://www.oracle.com/database/technologies/instant-client/linux-x86-64-downloads.html) to find the links for the most recent instant client.
-<!-- HUMZA DONE!-->
-* Copy the file links of the following Instant Client packages by right clicking and selecting "Copy Link Address". Paste each one on your preferred text editor.
-  * Basic Package (ZIP)
-  * SQL*Plus Package (ZIP)
-  * Tools Package (ZIP)
+- Copy the file links of the following Instant Client packages by right clicking and selecting "Copy Link Address". Paste each one on your preferred text editor.
+  - Basic Package (ZIP)
+  - SQL*Plus Package (ZIP)
+  - Tools Package (ZIP)
+
   ![](./screenshots/MV2ADB_screenshots/copy_link_wget.png)
-* Add "wget" in front of each copied link.
-  * Example:
+
+
+- Add "wget" in front of each copied link.
   ```
   wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantclient-basic-linux.x64-19.8.0.0.0dbru.zip
   wget https://download.oracle.com/otn_software/linux/instantclient/19800/instantclient-sqlplus-linux.x64-19.8.0.0.0dbru.zip
@@ -234,7 +218,7 @@ cd /opt/mv2adb
 ```
 ![](./screenshots/MV2ADB_screenshots/enc_pass.png)
 
-  *Note -: If you get an error saying it cannot find the command, you may have to run the mv2adb.bin without any parameters to first initialize it! (./mv2adb.bin)*
+  *Note: If you get an error saying it cannot find the command, you may have to run the mv2adb.bin without any parameters to first initialize it! (./mv2adb.bin)*
 
 
 
@@ -248,6 +232,9 @@ cp DBNAME.mv2adb.cfg BKP_DBNAME.mv2adb.cfg
 
 - The following parameters need to be edited in the config file on both Source database instances.
 - Edit the config file by running VI on the config file on both Source database instances.
+- When using vi, you enable editing by pressing the "i" key.
+- To disable editing, press the "escape" key.
+- To save, when editing is disabled, press the ":" key followed by "x" and then press "enter".
 ```
 vi /opt/mv2adb/conf/DBNAME.mv2adb.cfg
 ```
@@ -270,72 +257,101 @@ OCI_BUCKET=
 OCI_ID=
 OCI_PASSWORD=  
 ```
-
+- Unused parameters that need to be commented out.
+- To comment, add a # as the first character of the line.
+```
+#BV_USER=
+#FULL=Y
+#EXCLUDE=
+#ADB_CORES=
+#ADB_TARGET=  
+```
 
 ### Finding parameters
 
 ##### DB_CONSTRING
-* Navigate to your **SOURCE INSTANCES** and login as the **ORACLE USER**
-* Set your environment to your **SOURCE DATABASES**
-* Check the database listener
+Hostname
+- Navigate to both Source database instances and switch to "Oracle" user.
+- Set the environment on both Source database instances.
+- Check the listener on both of the databases.
+- Note down the "HOST" entry after the "Listening Endpoints Summary..." entry.
 ```
 . oraenv
 lsnrctl status
 ```
-![](./screenshots/MV2ADB_screenshots/listener.png)
-* The **HOSTNAME** will be under the "Listening Endpoints Summary", refer to screenshot
-* In this example, it is 10.9.1.33
+  ![](./screenshots/MV2ADB_screenshots/19clistener.png)
+  ![](./screenshots/MV2ADB_screenshots/11glistener.png)
 
-##### Service name
-* This is found in  **SOURCE DATABASES** tnsnames.ora file.
+
+Service Name for **databases running 11g**
+- With the environment still set for the 11g database, navigate to the tnsnames.ora file.
+- View the file.
+- Note down the "SERVICE_NAME" entry under the respective database entry.
 ```
 cat $ORACLE_HOME/network/admin/tnsnames.ora
 ```
-![](./screenshots/MV2ADB_screenshots/source_service.png)
+![](./screenshots/MV2ADB_screenshots/11gtnsnames.png)
 
-##### Test connectivity to the SOURCE databases using the connect strings
-* Connect your hostname and your service name, as shown in the example below
+
+Service Name for **19c databases or any container databases above version 12**
+- With the environment still set for the 19c database, connect to sqlplus.
+- Display PDBs, and note down the targeted PDB for migration.
+- Check the listener, and note down the first "Service" entry that starts with the targeted PDB name.
+```
+sqlplus / as sysdba
+show pdbs
+exit
+lsnrctl status
+```
+![](./screenshots/MV2ADB_screenshots/19cservicename.png)
+
+
+Verifying DB_CONSTRING
+```
+sqlplus SYS/DATABASPASSWORD#@//HOSTNAME/SERVICENAME as sysdba
+```
+
+11g example
+```
+sqlplus SYS/WElcome_123#@//10.9.1.34/Trg11_iad1ft.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
+```
+![](./screenshots/MV2ADB_screenshots/11gsql.png)
+
+19c example
 ```
 sqlplus SYS/WElcome_123#@//10.9.1.33/trg.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
+show con_name
 ```
-![](./screenshots/MV2ADB_screenshots/sql_host_service.png)
+![](./screenshots/MV2ADB_screenshots/19csql.png)
 
 
-### Filling out your ADB Properties
 ##### ADB_NAME
-This is the connect string found in your Autonomous tnsnames.ora file (credentials ZIP file). ***You do not need to add _high, it will be added automatically***
+- The ATP-D target database name.
+- Do not include consumer group (e.g. _high)
 
 ##### ADB_PASSWORD
-This is the Autonomous database password in the **ENCRYPTED** format from earlier steps.
+- The encrypted target ATP-D ADMIN password.
 
 ##### ADB_CFILE
-This is the location of your wallet ZIP file location, in this example it is -:
-```
-/root/instantclient_19_8/network/admin/Wallet_T19.zip
-```
-<!-- If you don't have your ZIP, just sftp to your network/admin folder. !-->
+- The ATP-D Wallet.zip file located in /root/instantclient_yourversion/network/admin.
 
-### Filling out your Object Store Properties
 ##### OCI_NAMESPACE
-This is the Oracle Cloud Infrastructure tenancy name
+- This is the Oracle Cloud Infrastructure tenancy name.
 
 ##### OCI_ID
-This is the login username. Include your oracleidentitycloudservice if using SSO / Federation.
-```
-e.g.
-oracleidentitycloudservice/noah.horner@oracle.com
-```
+- This is the Oracle Cloud Infrastructure login username.
 
 ##### OCI_PASSWORD
-This is the **ENCRYPTED** authentication token from earlier steps.
+- This is the **ENCRYPTED** Auth Token.
 
-### Screenshot of an example configuration file
-![](./screenshots/MV2ADB_screenshots/config_example.png)
+#### Example of completed configuration file
+![](./screenshots/MV2ADB_screenshots/comp_config.png)
 
-## Running the Migration Script
+
+## STEP 9: Run the Migration Script on both Source database instances
 The migration script will export from your source databases, then import into your Autonomous database using data pump. For more information, refer to the official steps from my Oracle support (MOS) [here](https://support.oracle.com/epmos/faces/DocContentDisplay?_afrLoop=291097898074822&id=2463574.1&_afrWindowMode=0&_adf.ctrl-state=v0102jx12_4).
 
-* Run the script in AUTO mode. ***MAKE SURE YOU ARE ROOT USER***
+- As root user on both source database instances, run the script in AUTO mode.
 ```
 cd /opt/mv2adb
 ./mv2adb.bin auto -conf /opt/mv2adb/conf/DBNAME.mv2adb.cfg
@@ -343,31 +359,33 @@ cd /opt/mv2adb
 ![](./screenshots/MV2ADB_screenshots/mv2adb_run.png)
 ![](./screenshots/MV2ADB_screenshots/autorun_1.png)
 
-* You may run into an error regarding DBA role grants. This is normal and expected, please refer to [here](https://docs.oracle.com/en/cloud/paas/exadata-express-cloud/mgeec/import-schema-oracle-autonomous-database-1.html).
-![](./screenshots/MV2ADB_screenshots/mv2done.png)
 
-<!-- fix this ~ Humza !-->
-## Validate the Data Migration
-We used HR schema, but make sure you check the correct schema you used from your configuration file. If you followed lab 7, HR should be there.
-
+## STEP 10: Validate the Data Migration
+- On both source database instances, run the mv2adb report.
 ```
-cd /root/instantclient_19_8/
-./sqlplus ADMIN/WElcome_123#@t19_high
-select TABLE_NAME from all_tables where owner='HR';
+cd /opt/mv2adb
+./mv2adb.bin report -conf conf/DBNAME.mv2adb.cfg
 ```
-![](./screenshots/MV2ADB_screenshots/schmea_verify.png)
 
+- 11g database example (MARKET SCHEMA)
+![](./screenshots/MV2ADB_screenshots/report_11_MARKET.png)
 
+- 11g database example (HR SCHEMA)
+![](./screenshots/MV2ADB_screenshots/report_19_HR.png)
 
 ## Troubleshooting Common Issues
 **Dump File errors**
-* Make sure to clear out the dump file directory after each iteration.
-```rm /home/oracle/dpump/* ```
+- Make sure to clear out the dump file directory after each failed iteration.
+```
+rm /home/oracle/dpump/*
+```
 ![](./screenshots/MV2ADB_screenshots/cleardpumpdir.png)
 
+  *Note: Validate the rm command is being ran on the DUMP_PATH parameter.*
+
 **Account Locked error**
-* Switch to Oracle user, set environment (.oraenv), and unlock.
-* The following commands will display all users that are locked, and how to unlock a user.
+- Switch to Oracle user, set environment (.oraenv), sqlplus, and unlock.
+- The following commands will display all users that are locked, and how to unlock a user.
 ```
 sqlplus / as sysdba
 SELECT username, account_status, created, lock_date, expiry_date FROM dba_users WHERE account_status != 'OPEN';
@@ -375,22 +393,20 @@ ALTER USER username ACCOUNT UNLOCK
 ```
 
 **Cannot Open Logfile**
-* Change directory group from root to oninstall, and change permissions.
+- Change directory group from root:root to oracle:oninstall, and change permissions.
 ```
 chown oracle:oinstall /home/oracle/dpump
 chmod -R 660 /home/oracle/dpump
 ```
 ![](./screenshots/MV2ADB_screenshots/cannotopenlogfile.png)
 
-**Wrong password when connecting**
-*  Verify the correct database password and auth token was encrypted. If needed, regenerate them and try again.
 
-**Getting a unreasonable amount of errors**
-* Check and verify the config file has the FULL = Y parameter commented out.
-
+**Getting an unreasonable amount of errors**
+- Verify the config file has the FULL=Y parameter commented out.
 ![](./screenshots/MV2ADB_screenshots/full=y.png)
 
-## Closing statement
+## Acknowledgements
+*Great Work! You have successfully migrated two source database schemas (HR for 19c, and MARKET for 11g) into one ATP-D database.*
 
 - **Author** - Noah Horner & Humza Meraj
 - **Last Updated By/Date** - Noah Horner & Humza Meraj September 28th, 2020.
