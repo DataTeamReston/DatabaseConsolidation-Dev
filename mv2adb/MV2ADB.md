@@ -386,7 +386,8 @@ chmod -R 660 /home/oracle/dpump
 *  Verify the correct database password and auth token was encrypted. If needed, regenerate them and try again.
 
 **Getting a unreasonable amount of errors**
-* Check and verify the config file has the FULL = Y parameter commented out. 
+* Check and verify the config file has the FULL = Y parameter commented out.
+
 ![](./screenshots/MV2ADB_screenshots/full=y.png)
 
 ## Closing statement
