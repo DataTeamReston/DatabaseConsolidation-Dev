@@ -5,7 +5,7 @@ The MV2ADB tool is able to automatically take a data pump export, push it to OCI
 *Note: For using mv2adb for migration from source DB to ATPD, the source DB should be at lower version than Autonomous Database.*
 
 
-![](./screenshots/MV2ADB_screenshots/consolidation.jpg)
+![](./screenshots/consolidation.jpg)
 
 
 ### Objectives
@@ -26,30 +26,30 @@ As a root user
 
 - Go to your Autonomous Database and click on “DB Connection”.
 
-![](./screenshots/MV2ADB_screenshots/download_wallet_1.png)
+![](./screenshots/download_wallet_1.png)
 
 - Click on Download wallet.
 
-![](./screenshots/MV2ADB_screenshots/download_wallet_2.png)
+![](./screenshots/download_wallet_2.png)
 
 - Create a password for the wallet.
 
-![](./screenshots/MV2ADB_screenshots/download_wallet_3.png)
+![](./screenshots/download_wallet_3.png)
 
 -  Click on Download.
 
-![](./screenshots/MV2ADB_screenshots/download_wallet_4.png)
+![](./screenshots/download_wallet_4.png)
 
 
 ## STEP 2: Generating an Auth Token and creating a bucket
 ##### Generating an Auth Token
 - Click on your profile, then your username
 
-![](./screenshots/MV2ADB_screenshots/authtoken_1.png)
+![](./screenshots/authtoken_1.png)
 
 - Click on Auth Token, and click Generate
 
-![](./screenshots/MV2ADB_screenshots/authtoken_2.png)
+![](./screenshots/authtoken_2.png)
 *Note: Copy your Auth Token to a notepad, as you cannot see it once you close the window.*
 
 
@@ -59,16 +59,16 @@ As a root user
 - Click on the menu in top left.
 - Select Object Storage.
 
-![](./screenshots/MV2ADB_screenshots/object_storage.png)
+![](./screenshots/object_storage.png)
 
 - Make sure you are in the right compartment.
 - Click "Create Bucket".
 
-![](./screenshots/MV2ADB_screenshots/create_bucket.png)
+![](./screenshots/create_bucket.png)
 
 - Set your name, then hit Create Bucket again.
 
-![](./screenshots/MV2ADB_screenshots/final_create_button.png)
+![](./screenshots/final_create_button.png)
 *Take note of your region, bucket name, and tenancy name for later.*
 
 
@@ -80,7 +80,7 @@ As a root user
   - SQL*Plus Package (ZIP)
   - Tools Package (ZIP)
 
-  ![](./screenshots/MV2ADB_screenshots/copy_link_wget.png)
+  ![](./screenshots/copy_link_wget.png)
 
 
 - Add "wget" in front of each copied link.
@@ -122,7 +122,7 @@ unzip -o instantclient-tools-linux.x64-19.8.0.0.0dbru.zip
 cd instantclient_19_8
 ls -lrta
 ```
-![](./screenshots/MV2ADB_screenshots/sql_imp_exp_unzip.png)
+![](./screenshots/sql_imp_exp_unzip.png)
 
 
 
@@ -131,14 +131,6 @@ ls -lrta
 - Navigate to the /tmp/ folder on both Source database instances via the sftp client
 - Upload the ATP-D wallet from your local machine to both Source database instances.
 - Exit the sftp client on your local machine.
-```
-sudo su - opc
-cd /tmp/
-Mkdir -m 777 wallets_19lab
-Cd wallets_19lab
-```
-
-
 - On both Source database instances, connect as root and navigate to /root/instantclient_yourversion/network/admin.
 - Move the ATP-D wallet from the /tmp/ directory to the /root/instantclient_yourversion/network/admin/ directory on both Source database instances.
 - Unzip the ATP-D wallet inside the directory on both Source database instances.
@@ -146,7 +138,7 @@ Cd wallets_19lab
 mv /tmp/Wallet_T19.zip /root/instantclient_19_8/network/admin/
 unzip Wallet_T19.zip
 ```
-![](./screenshots/MV2ADB_screenshots/wallet_unzip.png)
+![](./screenshots/wallet_unzip.png)
 
 
 ## STEP 5: Verifying both Source database instances can connect to the ATP-D database
@@ -155,7 +147,7 @@ unzip Wallet_T19.zip
 cd /root/instantclient_19_8/network/admin
 cat tnsnames.ora
 ```
-![](./screenshots/MV2ADB_screenshots/tnsnames_cat.png)
+![](./screenshots/tnsnames_cat.png)
   *Note: Both 11g and 19c Source databases are being consolidated into one ATP-D database, so the connect string will be the same for both Source database instances.*
 
 
@@ -166,7 +158,7 @@ export ORACLE_HOME=/root/instantclient_19_8
 export LD_LIBRARY_PATH="$ORACLE_HOME"
 export PATH="$ORACLE_HOME:$PATH"
 ```
-![](./screenshots/MV2ADB_screenshots/param_export.png)
+![](./screenshots/param_export.png)
 
  *Note: The ORACLE_HOME path may vary depending on your instant client version*
 
@@ -177,14 +169,14 @@ export PATH="$ORACLE_HOME:$PATH"
 cd /root/instantclient_19_8
 ./sqlplus ADMIN/DATABASEPASSWORD@t19_high
 ```
-![](./screenshots/MV2ADB_screenshots/sqlplus_connectivity.png)
+![](./screenshots/sqlplus_connectivity.png)
 
 
 
 ## STEP 6: Download and Install MV2ADB on both Source database instances.
 - On your local machine, download the MV2ADB rpm file [here](https://support.oracle.com/epmos/faces/DocContentDisplay?_afrLoop=291097898074822&id=2463574.1&_afrWindowMode=0&_adf.ctrl-state=v0102jx12_4). Platform specific rpm can be downloaded under the History Tab.
 
-  ![](./screenshots/MV2ADB_screenshots/MOS_history.png)
+  ![](./screenshots/MOS_history.png)
 
 
 - Using your preferred sftp client, connect to both Source database instances as opc user.
@@ -196,14 +188,14 @@ cd /root/instantclient_19_8
 ```
 rpm -i mv2adb-2.0.1-114.el6.x86_64.rpm
 ```
-![](./screenshots/MV2ADB_screenshots/rpm_install_mv2adb.png)
+![](./screenshots/rpm_install_mv2adb.png)
 
 
 - Verify installation was successful on both Source database instances.
 ```
 ls -lrta /opt/mv2adb
 ```
-![](./screenshots/MV2ADB_screenshots/mv2adb_verify.png)
+![](./screenshots/mv2adb_verify.png)
 
 
 
@@ -216,7 +208,7 @@ ls -lrta /opt/mv2adb
 cd /opt/mv2adb
 ./mv2adb.bin encpass
 ```
-![](./screenshots/MV2ADB_screenshots/enc_pass.png)
+![](./screenshots/enc_pass.png)
 
   *Note: If you get an error saying it cannot find the command, you may have to run the mv2adb.bin without any parameters to first initialize it! (./mv2adb.bin)*
 
@@ -279,8 +271,8 @@ Hostname
 . oraenv
 lsnrctl status
 ```
-  ![](./screenshots/MV2ADB_screenshots/19clistener.png)
-  ![](./screenshots/MV2ADB_screenshots/11glistener.png)
+  ![](./screenshots/19clistener.png)
+  ![](./screenshots/11glistener.png)
 
 
 Service Name for **databases running 11g**
@@ -290,7 +282,7 @@ Service Name for **databases running 11g**
 ```
 cat $ORACLE_HOME/network/admin/tnsnames.ora
 ```
-![](./screenshots/MV2ADB_screenshots/11gtnsnames.png)
+![](./screenshots/11gtnsnames.png)
 
 
 Service Name for **19c databases or any container databases above version 12**
@@ -303,7 +295,7 @@ show pdbs
 exit
 lsnrctl status
 ```
-![](./screenshots/MV2ADB_screenshots/19cservicename.png)
+![](./screenshots/19cservicename.png)
 
 
 Verifying DB_CONSTRING
@@ -315,14 +307,14 @@ sqlplus SYS/DATABASPASSWORD#@//HOSTNAME/SERVICENAME as sysdba
 ```
 sqlplus SYS/WElcome_123#@//10.9.1.34/Trg11_iad1ft.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
 ```
-![](./screenshots/MV2ADB_screenshots/11gsql.png)
+![](./screenshots/11gsql.png)
 
 19c example
 ```
 sqlplus SYS/WElcome_123#@//10.9.1.33/trg.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
 show con_name
 ```
-![](./screenshots/MV2ADB_screenshots/19csql.png)
+![](./screenshots/19csql.png)
 
 
 ##### ADB_NAME
@@ -345,7 +337,7 @@ show con_name
 - This is the **ENCRYPTED** Auth Token.
 
 #### Example of completed configuration file
-![](./screenshots/MV2ADB_screenshots/comp_config.png)
+![](./screenshots/comp_config.png)
 
 
 ## STEP 9: Run the Migration Script on both Source database instances
@@ -356,8 +348,8 @@ The migration script will export from your source databases, then import into yo
 cd /opt/mv2adb
 ./mv2adb.bin auto -conf /opt/mv2adb/conf/DBNAME.mv2adb.cfg
 ```
-![](./screenshots/MV2ADB_screenshots/mv2adb_run.png)
-![](./screenshots/MV2ADB_screenshots/autorun_1.png)
+![](./screenshots/mv2adb_run.png)
+![](./screenshots/autorun_1.png)
 
 
 ## STEP 10: Validate the Data Migration
@@ -368,10 +360,10 @@ cd /opt/mv2adb
 ```
 
 - 11g database example (MARKET SCHEMA)
-![](./screenshots/MV2ADB_screenshots/report_11_MARKET.png)
+![](./screenshots/report_11_MARKET.png)
 
-- 11g database example (HR SCHEMA)
-![](./screenshots/MV2ADB_screenshots/report_19_HR.png)
+- 19c database example (HR SCHEMA)
+![](./screenshots/report_19_HR.png)
 
 ## Troubleshooting Common Issues
 **Dump File errors**
@@ -379,7 +371,7 @@ cd /opt/mv2adb
 ```
 rm /home/oracle/dpump/*
 ```
-![](./screenshots/MV2ADB_screenshots/cleardpumpdir.png)
+![](./screenshots/cleardpumpdir.png)
 
   *Note: Validate the rm command is being ran on the DUMP_PATH parameter.*
 
@@ -398,12 +390,13 @@ ALTER USER username ACCOUNT UNLOCK
 chown oracle:oinstall /home/oracle/dpump
 chmod -R 660 /home/oracle/dpump
 ```
-![](./screenshots/MV2ADB_screenshots/cannotopenlogfile.png)
+![](./screenshots/cannotopenlogfile.png)
 
 
 **Getting an unreasonable amount of errors**
 - Verify the config file has the FULL=Y parameter commented out.
-![](./screenshots/MV2ADB_screenshots/full=y.png)
+
+  ![](./screenshots/full=y.png)
 
 ## Acknowledgements
 *Great Work! You have successfully migrated two source database schemas (HR for 19c, and MARKET for 11g) into one ATP-D database.*
