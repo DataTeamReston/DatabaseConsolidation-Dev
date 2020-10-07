@@ -9,10 +9,10 @@ is to reduce the cost of database infrastructure by taking advantage of more pow
 include dozens of processor cores in a single server. 
 
 Databases consolidation may involve any of the following configurations:
-• Multiple Databases on a Single Physical Server
-• Multiple Databases on a Single Virtual Machine
-• Multiple Databases on a Cluster of Physical Servers
-• Multiple Databases on a Cluster of Virtual Machines
+- Multiple Databases on a Single Physical Server
+- Multiple Databases on a Single Virtual Machine
+- Multiple Databases on a Cluster of Physical Servers
+- Multiple Databases on a Cluster of Virtual Machines
 
 Database consolidation allows more databases to run on fewer servers, which reduces infrastructure, but also reduces operational
 costs. Each physical server represents an Information Technology asset or “Configuration Item” (CI) that must be placed into a
