@@ -9,7 +9,7 @@ The MV2ADB tool is able to automatically take a data pump export, push it to OCI
 
 
 ### Objectives
-As a root user
+As a **root** user
 1. Establish connectivity from source database instances to Target instance.
 2. Install and configure MV2ADB tool on source databases.
 3. Run the MV2ADB config script to migrate the databases from Source to Target.
@@ -24,11 +24,11 @@ As a root user
 ## STEP 1: Downloading ATP-D wallet to your local machine
 
 
-- Go to your Autonomous Database and click on “DB Connection”.
+- Navigate to your Autonomous Database and click on “DB Connection”.
 
 ![](./screenshots/download_wallet_1.png)
 
-- Click on Download wallet.
+- Click "Download Wallet"
 
 ![](./screenshots/download_wallet_2.png)
 
@@ -36,14 +36,14 @@ As a root user
 
 ![](./screenshots/download_wallet_3.png)
 
--  Click on Download.
+-  Click "Download"
 
 ![](./screenshots/download_wallet_4.png)
 
 
 ## STEP 2: Generating an Auth Token and creating a bucket
 ##### Generating an Auth Token
-- Click on your profile, then your username
+- Click on your profile, then click your username
 
 ![](./screenshots/authtoken_1.png)
 
@@ -61,12 +61,12 @@ As a root user
 
 ![](./screenshots/object_storage.png)
 
-- Make sure you are in the right compartment.
+- Verify you are in the right compartment.
 - Click "Create Bucket".
 
 ![](./screenshots/create_bucket.png)
 
-- Set your name, then hit Create Bucket again.
+- Enter a name for your bucket, then hit Create Bucket again.
 
 ![](./screenshots/final_create_button.png)
 *Take note of your region, bucket name, and tenancy name for later.*
@@ -200,7 +200,7 @@ ls -lrta /opt/mv2adb
 
 
 ## STEP 7: Encrypt passwords of both Source database instances, Target database, and Auth Token.
-- Encrypt to following passwords using the “mv2adb encpass” command, and save the values to a safe location (Eg: Notepad).
+- Encrypt the following passwords using the “mv2adb encpass” command, and save the values to a safe location (Eg: Notepad). Run the command for each password you would like to encrypt.
   - Both Source database SYS passwords.
   - ADMIN password of the Target database.
   - Auth Token.
@@ -252,7 +252,7 @@ OCI_PASSWORD=
 - Unused parameters that need to be commented out.
 - To comment, add a # as the first character of the line.
 ```
-#BV_USER=
+#DBV_USER=
 #FULL=Y
 #EXCLUDE=
 #ADB_CORES=
@@ -300,12 +300,12 @@ lsnrctl status
 
 Verifying DB_CONSTRING
 ```
-sqlplus SYS/DATABASPASSWORD#@//HOSTNAME/SERVICENAME as sysdba
+sqlplus SYS/DATABASEPASSWORD@//HOSTNAME/SERVICENAME as sysdba
 ```
 
 11g example
 ```
-sqlplus SYS/WElcome_123#@//10.9.1.34/Trg11_iad1ft.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
+sqlplus SYS/WElcome_123@//10.9.1.34/Trg11_iad1ft.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
 ```
 ![](./screenshots/11gsql.png)
 
@@ -319,7 +319,7 @@ show con_name
 
 ##### ADB_NAME
 - The ATP-D target database name.
-- Do not include consumer group (e.g. _high)
+- This can be also found in the "tnsnames.ora" file inside the ADB Wallet. Do not include consumer group (e.g. _high)
 
 ##### ADB_PASSWORD
 - The encrypted target ATP-D ADMIN password.
@@ -402,4 +402,4 @@ chmod -R 660 /home/oracle/dpump
 *Great Work! You have successfully migrated two source database schemas (HR for 19c, and MARKET for 11g) into one ATP-D database.*
 
 - **Author** - Noah Horner & Humza Meraj
-- **Last Updated By/Date** - Noah Horner & Humza Meraj September 28th, 2020.
+- **Last Updated By/Date** - Noah Horner & Humza Meraj October 7th, 2020.
