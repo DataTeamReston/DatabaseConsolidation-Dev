@@ -305,7 +305,7 @@ sqlplus SYS/DATABASEPASSWORD@//HOSTNAME/SERVICENAME as sysdba
 
 11g example
 ```
-sqlplus SYS/WElcome_123@//10.9.1.34/Trg11_iad1ft.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
+sqlplus SYS/WElcome_123#@//10.9.1.34/Trg11_iad1ft.sub02201203420.autonomouscmpvc.oraclevcn.com as sysdba
 ```
 ![](./screenshots/11gsql.png)
 
