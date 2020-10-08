@@ -1,8 +1,8 @@
-# Migrate Workloads to ATP-D using MV2ADB
+# Consolidate Workloads to Autonomous Database using MV2ADB
 ## Introduction
 Move to Autonomous Database (MV2ADB) is a tool, which migrates data from an "on premises" database to Autonomous Database Cloud utilizing Oracle Data Pump. Data Pump lets you Import your data into Autonomous Database using Data Pump Dump Files which are residing on Oracle Cloud Infrastructure Object Storage.
 The MV2ADB tool is able to automatically take a data pump export, push it to OCI Object Storage, then it automatically imports it into the Autonomous Database using Data Pump in one command.
-*Note: For using mv2adb for migration from source DB to ATPD, the source DB should be at lower version than Autonomous Database.*
+*Note: For using mv2adb for migration from source DB to ADB, the source DB should be at lower version than Autonomous Database.*
 
 
 ![](./screenshots/consolidation.jpg)
@@ -17,11 +17,11 @@ As a **root** user
 ### Required Artifacts
 - A pre-provisioned dedicated autonomous database instance.
 - Two pre-provisioned Source databases, one 19c and one 11g.
-- ATP-D Wallet downloaded on your local machine.
+- ADB Wallet downloaded on your local machine.
 - A pre-generated Auth Token from the console.
 
 
-## STEP 1: Downloading ATP-D wallet to your local machine
+## STEP 1: Downloading ADB wallet to your local machine
 
 
 - Navigate to your Autonomous Database and click on “DB Connection”.
@@ -126,14 +126,14 @@ ls -lrta
 
 
 
-## STEP 4: Transferring the ATP-D wallet on your local machine to both Source database instances
+## STEP 4: Transferring the ADB wallet on your local machine to both Source database instances
 - Using your preferred sftp client, connect to both Source database instances as opc user.
 - Navigate to the /tmp/ folder on both Source database instances via the sftp client
-- Upload the ATP-D wallet from your local machine to both Source database instances.
+- Upload the ADB wallet from your local machine to both Source database instances.
 - Exit the sftp client on your local machine.
 - On both Source database instances, connect as root and navigate to /root/instantclient_yourversion/network/admin.
-- Move the ATP-D wallet from the /tmp/ directory to the /root/instantclient_yourversion/network/admin/ directory on both Source database instances.
-- Unzip the ATP-D wallet inside the directory on both Source database instances.
+- Move the ADB wallet from the /tmp/ directory to the /root/instantclient_yourversion/network/admin/ directory on both Source database instances.
+- Unzip the ADB wallet inside the directory on both Source database instances.
 ```
 mv /tmp/Wallet_T19.zip /root/instantclient_19_8/network/admin/
 unzip Wallet_T19.zip
@@ -141,14 +141,14 @@ unzip Wallet_T19.zip
 ![](./screenshots/wallet_unzip.png)
 
 
-## STEP 5: Verifying both Source database instances can connect to the ATP-D database
-- View the connect string via the tnsnames.ora from the ATP-D wallet on both Source database instances.
+## STEP 5: Verifying both Source database instances can connect to the ADB database
+- View the connect string via the tnsnames.ora from the ADB wallet on both Source database instances.
 ```
 cd /root/instantclient_19_8/network/admin
 cat tnsnames.ora
 ```
 ![](./screenshots/tnsnames_cat.png)
-  *Note: Both 11g and 19c Source databases are being consolidated into one ATP-D database, so the connect string will be the same for both Source database instances.*
+  *Note: Both 11g and 19c Source databases are being consolidated into one ADB database, so the connect string will be the same for both Source database instances.*
 
 
 
@@ -214,7 +214,7 @@ cd /opt/mv2adb
 
 
 
-## STEP 8: Run the Migration Script on both Source database instances
+## STEP 8: Configure the MV2ADB Script on both source database instances
 - Backup the existing configuration file on both Source database instances.
 ```
 cd /opt/mv2adb/conf/
@@ -318,14 +318,14 @@ show con_name
 
 
 ##### ADB_NAME
-- The ATP-D target database name.
+- The ADB target database name.
 - This can be also found in the "tnsnames.ora" file inside the ADB Wallet. Do not include consumer group (e.g. _high)
 
 ##### ADB_PASSWORD
-- The encrypted target ATP-D ADMIN password.
+- The encrypted target ADB ADMIN password.
 
 ##### ADB_CFILE
-- The ATP-D Wallet.zip file located in /root/instantclient_yourversion/network/admin.
+- The ADB Wallet.zip file located in /root/instantclient_yourversion/network/admin.
 
 ##### OCI_NAMESPACE
 - This is the Oracle Cloud Infrastructure tenancy name.
@@ -340,7 +340,7 @@ show con_name
 ![](./screenshots/comp_config.png)
 
 
-## STEP 9: Run the Migration Script on both Source database instances
+## STEP 9: Run the MV2ADB migration script on both Source database instances
 The migration script will export from your source databases, then import into your Autonomous database using data pump. For more information, refer to the official steps from my Oracle support (MOS) [here](https://support.oracle.com/epmos/faces/DocContentDisplay?_afrLoop=291097898074822&id=2463574.1&_afrWindowMode=0&_adf.ctrl-state=v0102jx12_4).
 
 - As root user on both source database instances, run the script in AUTO mode.
@@ -399,7 +399,7 @@ chmod -R 660 /home/oracle/dpump
   ![](./screenshots/full=y.png)
 
 ## Acknowledgements
-*Great Work! You have successfully migrated two source database schemas (HR for 19c, and MARKET for 11g) into one ATP-D database.*
+*Great Work! You have successfully migrated two source database schemas (HR for 19c, and MARKET for 11g) into one ADB database.*
 
 - **Author** - Noah Horner & Humza Meraj
 - **Last Updated By/Date** - Noah Horner & Humza Meraj October 7th, 2020.
